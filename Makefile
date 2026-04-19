@@ -1,46 +1,72 @@
-OWNER = anchore
-PROJECT = syft
+# Makefile for syft - a fork of anchore/syft
 
-TOOL_DIR = .tool
-BINNY = $(TOOL_DIR)/binny
-TASK = $(TOOL_DIR)/task
+BINARY := syft
+GO := go
+GOFLAGS ?= -trimpath
+BUILD_DIR := ./dist
+CMD_DIR := ./cmd/syft
 
-.DEFAULT_GOAL := make-default
+# Version information
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-## Bootstrapping targets #################################
+LDFLAGS := -ldflags "-X main.version=$(VERSION) -X main.gitCommit=$(GIT_COMMIT) -X main.buildDate=$(BUILD_DATE)"
 
-# note: we need to assume that binny and task have not already been installed
-$(BINNY):
-	@mkdir -p $(TOOL_DIR)
-	@curl -sSfL https://get.anchore.io/binny | sh -s -- -b $(TOOL_DIR)
+.DEFAULT_GOAL := help
 
-# note: we need to assume that binny and task have not already been installed
-.PHONY: task
-$(TASK) task: $(BINNY)
-	@$(BINNY) install task -q
+.PHONY: help
+help: ## Show this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: ci-bootstrap-go
-ci-bootstrap-go:
-	go mod download
+.PHONY: build
+build: ## Build the binarykdir -p $(BUILD_DIR)
+	$(GO) build $(FLAGS) $(LDFLAGS) -o $(BUILD_DIR)/$(CMD_DIR)
 
-# this is a bootstrapping catch-all, where if the target doesn't exist, we'll ensure the tools are installed and then try again
-%:
-	@make --silent $(TASK)
-	@$(TASK) $@
+.PHONY: run
+run: ## Run the binary
+	$(GO) run $(CMD_DIR)/main.go
 
-## Shim targets #################################
+.PHONY: test
+test: ## Run unit tests
+	$(GO) test ./... -v -count=1
 
-.PHONY: make-default
-make-default: $(TASK)
-	@# run the default task in the taskfile
-	@$(TASK)
+.PHONY: test-race
+test-race: ## Run tests with race detector
+	$(GO) test -race ./... -count=1
 
-# for those of us that can't seem to kick the habit of typing `make ...` lets wrap the superior `task` tool
-TASKS := $(shell bash -c "test -f $(TASK) && NO_COLOR=1 $(TASK) -l | grep '^\* ' | cut -d' ' -f2 | tr -d ':' | tr '\n' ' '" ) $(shell bash -c "test -f $(TASK) && NO_COLOR=1 $(TASK) -l | grep 'aliases:' | cut -d ':' -f 3 | tr '\n' ' ' | tr -d ','")
+.PHONY: lint
+lint: ## Run linter
+	$(GO) vet ./...
+	@which golangci-lint > /dev/null 2>&1 && golangci-lint run ./... || echo "golangci-lint not installed, skipping"
 
-.PHONY: $(TASKS)
-$(TASKS): $(TASK)
-	@$(TASK) $@
+.PHONY: fmt
+fmt: ## Format Go source files
+	$(GO) fmt ./...
 
-help: $(TASK)
-	@$(TASK) -l
+.PHONY: tidy
+tidy: ## Tidy go modules
+	$(GO) mod tidy
+
+.PHONY: clean
+clean: ## Remove build artifacts
+	rm -rf $(BUILD_DIR)
+
+.PHONY: install
+install: build ## Install binary to GOPATH/bin
+	cp $(BUILD_DIR)/$(BINARY) $(GOPATH)/bin/$(BINARY)
+
+.PHONY: snapshot
+snapshot: ## Build a snapshot release with goreleaser
+	goreleaser release --snapshot --clean --skip-publish
+
+.PHONY: release
+release: ## Build a full release with goreleaser
+	goreleaser release --clean
+
+.PHONY: bootstrap
+bootstrap: ## Install required tooling
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+.PHONY: check
+check: fmt lint test ## Run fmt, lint, and tests
