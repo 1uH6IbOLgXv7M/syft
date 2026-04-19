@@ -20,8 +20,9 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: build
-build: ## Build the binarykdir -p $(BUILD_DIR)
-	$(GO) build $(FLAGS) $(LDFLAGS) -o $(BUILD_DIR)/$(CMD_DIR)
+build: ## Build the binary
+	mkdir -p $(BUILD_DIR)
+	$(GO) build $(AGS) -o $(BUILD_DIR)/$(BINARY) $(CMD_DIR)
 
 .PHONY: run
 run: ## Run the binary
