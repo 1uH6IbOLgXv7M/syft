@@ -22,13 +22,11 @@ help: ## Show this help message
 .PHONY: build
 build: ## Build the binary
 	mkdir -p $(BUILD_DIR)
-	$(GO) build $(AGS) -o $(BUILD_DIR)/$(BINARY) $(CMD_DIR)
+	$(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY) $(CMD_DIR)
 
 .PHONY: run
 run: ## Run the binary
-	$(GO) run $(CMD_DIR)/main.go
-
-.PHONY: test
+	$(GO) run $(CMD_DIRn.PHONY: test
 test: ## Run unit tests
 	$(GO) test ./... -v -count=1
 
