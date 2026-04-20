@@ -26,7 +26,9 @@ build: ## Build the binary
 
 .PHONY: run
 run: ## Run the binary
-	$(GO) run $(CMD_DIRn.PHONY: test
+	$(GO) run $(CMD_DIR)
+
+.PHONY: test
 test: ## Run unit tests
 	$(GO) test ./... -v -count=1
 
@@ -67,5 +69,6 @@ release: ## Build a full release with goreleaser
 bootstrap: ## Install required tooling
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
+# Run check before pushing; fmt will fix formatting, lint catches issues, test confirms nothing broke
 .PHONY: check
 check: fmt lint test ## Run fmt, lint, and tests
