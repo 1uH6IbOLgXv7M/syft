@@ -33,7 +33,12 @@ test: ## Run unit tests
 	$(GO) test ./... -v -count=1
 
 .PHONY: test-race
-test-race: ## Run tests with race detector	$(GO) fmt ./...
+test-race: ## Run tests with race detector
+	$(GO) test -race ./... -count=1
+
+.PHONY: fmt
+fmt: ## Format Go source files
+	$(GO) fmt ./...
 
 .PHONY: tidy
 tidy: ## Tidy go modules
