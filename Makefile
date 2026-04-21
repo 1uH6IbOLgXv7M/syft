@@ -66,6 +66,7 @@ bootstrap: ## Install required tooling
 
 # Run check before pushing; fmt will fix formatting, lint catches issues, test confirms nothing broke
 # Note: I prefer running tests without -v here to keep check output concise
+# Note: added -timeout 120s because some integration tests were hanging on my machine
 .PHONY: check
 check: fmt lint ## Run fmt and lint (use 'make test' separately for verbose test output)
-	$(GO) test ./... -count=1
+	$(GO) test ./... -count=1 -timeout 120s
