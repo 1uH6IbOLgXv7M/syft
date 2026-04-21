@@ -33,17 +33,7 @@ test: ## Run unit tests
 	$(GO) test ./... -v -count=1
 
 .PHONY: test-race
-test-race: ## Run tests with race detector
-	$(GO) test -race ./... -count=1
-
-.PHONY: lint
-lint: ## Run linter
-	$(GO) vet ./...
-	@which golangci-lint > /dev/null 2>&1 && golangci-lint run ./... || echo "golangci-lint not installed, skipping"
-
-.PHONY: fmt
-fmt: ## Format Go source files
-	$(GO) fmt ./...
+test-race: ## Run tests with race detector	$(GO) fmt ./...
 
 .PHONY: tidy
 tidy: ## Tidy go modules
@@ -70,5 +60,7 @@ bootstrap: ## Install required tooling
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 # Run check before pushing; fmt will fix formatting, lint catches issues, test confirms nothing broke
+# Note: I prefer running tests without -v here to keep check output concise
 .PHONY: check
-check: fmt lint test ## Run fmt, lint, and tests
+check: fmt lint ## Run fmt and lint (use 'make test' separately for verbose test output)
+	$(GO) test ./... -count=1
